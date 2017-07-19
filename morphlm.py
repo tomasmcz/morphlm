@@ -21,7 +21,8 @@ def print_info():
     print("===MorphLM info===")
     print("Experiment name:", FLAGS.experiment)
     print("Tensorflow version:", tf.__version__)
-    print("Data:", FLAGS.data_prepared, FLAGS.data_raw)
+    print("Training data:", FLAGS.data_train)
+    print("Development data:", FLAGS.data_dev)
     print("N-gram order:", FLAGS.order)
     print("Use morphology:", FLAGS.morph)
     print("Use morphology on output to train:", FLAGS.morph_out)
@@ -44,8 +45,8 @@ def print_info():
     print("==================")
 
 def define_args():
-    flags.DEFINE_string('data-prepared', None, 'Data in prepared format.')
-    flags.DEFINE_string('data-raw', None, 'Data in raw format.')
+    flags.DEFINE_string('data-train', None, 'Training data.')
+    flags.DEFINE_string('data-dev', None, 'Development data.')
     flags.DEFINE_string('vocab-forms', None, 'Vocabulary for forms.')
     flags.DEFINE_string('vocab-lemmata', None, 'Vocabulary for lemmata.')
     flags.DEFINE_integer('order', 5, 'N-gram order.')
@@ -393,22 +394,13 @@ def run_training():
     for it in range(FLAGS.max_iter):
         print("Preparing data ...")
         time_s = time.time()
-        if FLAGS.data_prepared is not None:
-            data_source = FLAGS.data_prepared
-            data = prepared_batch_reader(my_open('data/' + FLAGS.data_prepared + '/ngrams-train', 'r'),
+        if FLAGS.data_train is None or FLAGS.data_dev is None:
+            raise Exception("Missing dataset.")
+            data = raw_batch_reader(my_open(FLAGS.data_train, 'r'),
                             FLAGS.batch_size,
                             FLAGS.morph or FLAGS.morph_out)
-            test_data = prepared_batch_reader(my_open('data/' + FLAGS.data_prepared + '/ngrams-dev', 'r'),
+            test_data = raw_batch_reader(my_open(FLAGS.data_dev, 'r'),
                                  FLAGS.batch_size, FLAGS.morph or FLAGS.morph_out)
-        elif FLAGS.data_raw is not None:
-            data_source = FLAGS.data_raw
-            data = raw_batch_reader(my_open(FLAGS.data_raw + '-train', 'r'),
-                            FLAGS.batch_size,
-                            FLAGS.morph or FLAGS.morph_out)
-            test_data = raw_batch_reader(my_open(FLAGS.data_raw + '-dev', 'r'),
-                                 FLAGS.batch_size, FLAGS.morph or FLAGS.morph_out)
-        else:
-            raise Exception("No dataset given.")
 
         print("... done.", time.time() - time_s)
 
@@ -456,7 +448,7 @@ def run_training():
     engine = 'morphlm' if FLAGS.morph else 'formlm'
 
     print(','.join(map(str, [engine
-                    , data_source
+                    , FLAGS.data_train
                     , FLAGS.max_iter
                     , FLAGS.noise
                     , FLAGS.emb_size
