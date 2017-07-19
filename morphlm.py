@@ -25,7 +25,6 @@ def print_info():
     print("Development data:", FLAGS.data_dev)
     print("N-gram order:", FLAGS.order)
     print("Use morphology:", FLAGS.morph)
-    print("Use morphology on output to train:", FLAGS.morph_out)
     print("Use NCE:", FLAGS.nce)
     if FLAGS.adam:
         print("Optimizer:", "Adam")
@@ -51,7 +50,7 @@ def define_args():
     flags.DEFINE_string('vocab-lemmata', None, 'Vocabulary for lemmata.')
     flags.DEFINE_integer('order', 5, 'N-gram order.')
     flags.DEFINE_integer('voc-size', 50000, 'Vocabulary size.')
-    flags.DEFINE_integer('emb-size', 50, 'Embedding size.')
+    flags.DEFINE_integer('emb-size', 200, 'Embedding size.')
     flags.DEFINE_integer('h1-size', 750, 'Embedding size.')
     flags.DEFINE_integer('h2-size', 150, 'Embedding size.')
     flags.DEFINE_integer('max-iter', 5, 'Number of iterations.')
@@ -61,8 +60,6 @@ def define_args():
     flags.DEFINE_boolean('sampled-softmax', True, 'Use sampled softmax.')
     flags.DEFINE_boolean('adam', False, 'Use Adam instead of SGD.')
     flags.DEFINE_boolean('morph', True, 'Use morphology.')
-    flags.DEFINE_boolean('no-morph-input', False, 'No morphology on input.')
-    flags.DEFINE_boolean('morph-out', False, 'Use morphology on output to train.')
     flags.DEFINE_integer('noise', 10, 'Number of noise samples.')
     flags.DEFINE_string('prefix', './', 'Path prefix.')
     flags.DEFINE_string('experiment', 'test', 'Experiment name.')
@@ -139,11 +136,10 @@ def raw_batch_reader(data_file, batch_size, lmt):
         factors = [x.split('|') for x in n]
         forms = [vocab_f.get(x[0], 0) for x in factors]
         data_y.append(forms)
-        if not FLAGS.no_morph_input:
-            lemmata = [vocab_l.get(x[1], 0) for x in factors]
-            tags = sum([mk_tag(x[2]) for x in factors], [])
-            data_x.append(lemmata)
-            data_x2.append(tags)
+        lemmata = [vocab_l.get(x[1], 0) for x in factors]
+        tags = sum([mk_tag(x[2]) for x in factors], [])
+        data_x.append(lemmata)
+        data_x2.append(tags)
         c += 1
         if c == batch_size:
             if lmt:

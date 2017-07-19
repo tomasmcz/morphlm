@@ -16,7 +16,7 @@ sess = tf.Session()
 gt = sess.graph.get_tensor_by_name
 
 def define_args():
-    flags.DEFINE_string('data-raw', None, 'Data in raw format.')
+    flags.DEFINE_string('data', None, 'Data.')
     flags.DEFINE_string('vocab-forms', None, 'Vocabulary for forms.')
     flags.DEFINE_string('vocab-lemmata', None, 'Vocabulary for lemmata.')
     flags.DEFINE_integer('order', 5, 'N-gram order.')
@@ -64,11 +64,10 @@ def batch_reader(data_file):
             factors = [x.split('|') for x in n]
             forms = [vocab_f.get(x[0], 0) for x in factors]
             data_y.append(forms)
-            if not FLAGS.no_morph_input:
-                lemmata = [vocab_l.get(x[1], 0) for x in factors]
-                tags = sum([mk_tag(x[2]) for x in factors], [])
-                data_x.append(lemmata)
-                data_x2.append(tags)
+            lemmata = [vocab_l.get(x[1], 0) for x in factors]
+            tags = sum([mk_tag(x[2]) for x in factors], [])
+            data_x.append(lemmata)
+            data_x2.append(tags)
         if FLAGS.morph:
             yield (np.array(data_x), np.array(data_x2, dtype=np.float32),
                    np.array(data_y)), len(ngram)
@@ -131,13 +130,13 @@ def create_feed_dict(data_all, is_test=False):
 def main(_):
     init_default()
     # read the data
-    data=batch_reader(morphlm.my_open(FLAGS.data_raw, 'r'))
+    data=batch_reader(morphlm.my_open(FLAGS.data, 'r'))
     # go through data and compute things
     for (data_all, b_s) in data:
         logits = \
         sess.run(gt('cross-entropy_loss/SparseSoftmaxCrossEntropyWithLogits/SparseSoftmaxCrossEntropyWithLogits:0'),
             feed_dict=create_feed_dict(data_all))
-        print(-sum(logits), len(logits), math.exp(sum(logits)/len(logits)))
+        print(-sum(logits), len(logits))
 
 if __name__ == '__main__':
     define_args()
